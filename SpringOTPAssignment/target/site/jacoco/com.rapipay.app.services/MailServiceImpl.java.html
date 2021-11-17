@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MailServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">SpringOTPAssignment</a> &gt; <a href="index.source.html" class="el_package">com.rapipay.app.services</a> &gt; <span class="el_source">MailServiceImpl.java</span></div><h1>MailServiceImpl.java</h1><pre class="source lang-java linenums">package com.rapipay.app.services;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
+import java.util.regex.Pattern;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.mail.MailException;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+
+import com.rapipay.app.beans.User;
+import com.rapipay.app.controller.Controller;
+import com.rapipay.app.dao.OtpRepository;
+import com.rapipay.app.exception.EmailNotFoundException;
+import com.rapipay.app.exception.InvalidEmailException;
+import com.rapipay.app.exception.InvalidOtpException;
+import com.rapipay.app.exception.OtpLengthException;
+
+
+@Service
+<span class="nc" id="L28">public class MailServiceImpl implements MailService{</span>
+<span class="nc" id="L29">	private static final Logger LOGGER = LoggerFactory.getLogger(Controller.class);</span>
+	
+	@Value(&quot;${attempts}&quot;)
+	private int maxattempt;
+	
+	@Autowired
+	private OtpRepository otpRepo;
+
+	@Autowired
+	private SenderService senderService;
+	
+	@Override
+	public boolean validEmail(String email) {
+<span class="nc" id="L42">		System.out.println(maxattempt+&quot;-------------------------&quot;);</span>
+<span class="nc" id="L43">		final Pattern EMAIL_REGEX = Pattern.compile(&quot;^\\w+([-+.']\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$&quot;, Pattern.CASE_INSENSITIVE);</span>
+<span class="nc" id="L44">	    return EMAIL_REGEX.matcher(email).matches();</span>
+	}
+	
+
+	@Override
+	public String addUser(User data)  {
+		// TODO Auto-generated method stub
+<span class="nc" id="L51">		LOGGER.info(&quot;Inside addUser&quot;);</span>
+		
+<span class="nc bnc" id="L53" title="All 2 branches missed.">		if(validEmail(data.getEmail())==false) {</span>
+<span class="nc" id="L54">    		return new InvalidEmailException(&quot;Wrong email pattern&quot;).toString();</span>
+    	}
+<span class="nc" id="L56">		data.setOtpRequestTime();</span>
+<span class="nc" id="L57">    	int otp = new Random().nextInt(999999);</span>
+<span class="nc" id="L58">    	data.setOtp(otp);</span>
+<span class="nc" id="L59">    	String send=senderService.sendEmail(data.getEmail(), String.format(&quot;%06d&quot;, otp),&quot;System generated otp&quot;);</span>
+<span class="nc" id="L60">		System.out.println(data.getOtpRequestTime());</span>
+<span class="nc" id="L61">		otpRepo.save(data);</span>
+<span class="nc" id="L62">		return &quot;Otp sent&quot;;</span>
+		
+	}
+	
+
+	@Override
+	public String validateOtp(User user) {
+		// TODO Auto-generated method stub
+<span class="nc" id="L70">		LOGGER.info(&quot;Inside ValidateOTP&quot;);</span>
+<span class="nc" id="L71">		String email=user.getEmail();</span>
+		
+<span class="nc bnc" id="L73" title="All 2 branches missed.">		if(validEmail(email)==false) {</span>
+<span class="nc" id="L74">    		return new InvalidEmailException(&quot;Wrong email pattern&quot;).toString();</span>
+    	}
+		
+<span class="nc" id="L77">    	int otp=user.getOtp();</span>
+<span class="nc" id="L78">    	String otpData=String.valueOf(otp);</span>
+    	
+    	try {
+    		
+<span class="nc" id="L82">    		User data= otpRepo.findById(email).orElseThrow(() -&gt; new EmailNotFoundException(&quot;Email not  found&quot;));</span>
+    		
+<span class="nc" id="L84">    		System.out.println(data.getOtpRequestTime());</span>
+<span class="nc" id="L85">    		System.out.println(System.currentTimeMillis());</span>
+    		
+<span class="nc" id="L87">        	long time=System.currentTimeMillis();</span>
+<span class="nc" id="L88">        	long diff=( time-data.getOtpRequestTime() )/1000;</span>
+
+<span class="nc" id="L90">        	System.out.println(&quot;difference is &quot;+diff);</span>
+        	
+<span class="nc" id="L92">        	System.out.println(&quot;inside validate&quot;);</span>
+        	
+<span class="nc bnc" id="L94" title="All 4 branches missed.">        	if(diff&lt;60 &amp;&amp; data.getOtp()==otp) {</span>
+<span class="nc" id="L95">        		System.out.println(&quot;running inside if&quot;);</span>
+<span class="nc" id="L96">        		return &quot;Correct Otp..Verified&quot;;</span>
+        	}
+        	
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        	else if(diff&gt;60) {</span>
+<span class="nc" id="L100">        		return &quot;Otp expired&quot;;</span>
+        	}
+        	
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        	else if(otpData.length()!=6){</span>
+<span class="nc" id="L104">        		return new OtpLengthException(&quot;Otp length is not of six digits&quot;).toString();</span>
+        	}
+        	
+        	else {
+<span class="nc" id="L108">        		System.out.println(&quot;running inside else&quot;);</span>
+<span class="nc" id="L109">        		return new InvalidOtpException(&quot;Incorrect otp..try again&quot;).toString();</span>
+        	}
+    		
+    	}
+<span class="nc" id="L113">    	catch(EmailNotFoundException e) {</span>
+<span class="nc" id="L114">    		return e.getMessage();</span>
+    	}
+    	
+    	
+	}
+	
+	
+	@Override
+	public String resendOtp(User data) {
+		// TODO Auto-generated method stub
+		
+			
+<span class="nc" id="L126">		String email=data.getEmail();</span>
+<span class="nc" id="L127">		System.out.println(email);</span>
+		
+<span class="nc bnc" id="L129" title="All 2 branches missed.">		if(validEmail(email)==false) {</span>
+<span class="nc" id="L130">    		return new InvalidEmailException(&quot;Wrong email pattern&quot;).toString();</span>
+    	}
+		try {
+				
+<span class="nc" id="L134">			User user= otpRepo.findById(email).orElseThrow(() -&gt; new EmailNotFoundException(&quot;Email not  found&quot;));</span>
+<span class="nc" id="L135">			System.out.println(user.getOtpRequestTime());</span>
+<span class="nc" id="L136">			System.out.println(System.currentTimeMillis());</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">			if( (maxattempt&gt;=1)) {</span>
+				
+<span class="nc" id="L139">				maxattempt--;</span>
+<span class="nc" id="L140">				System.out.println(maxattempt);</span>
+<span class="nc" id="L141">				int otp = new Random().nextInt(999999);</span>
+				
+<span class="nc bnc" id="L143" title="All 2 branches missed.">				if( (System.currentTimeMillis()-user.getOtpRequestTime()/1000) &gt;60) {</span>
+					
+<span class="nc" id="L145">					data.setOtp(otp);</span>
+<span class="nc" id="L146">					data.setOtpRequestTime();</span>
+<span class="nc" id="L147">					otpRepo.save(data);</span>
+<span class="nc" id="L148">					senderService.sendEmail(data.getEmail(), String.format(&quot;%06d&quot;, data.getOtp()),&quot;System generated otp&quot;);</span>
+					
+<span class="nc" id="L150">					return &quot;Otp sent successfully&quot;;</span>
+					
+				}
+				
+				else {
+					
+<span class="nc" id="L156">					return &quot;You can generate otp only after 60 secs&quot;;</span>
+					
+				}
+				
+			}
+			else {
+<span class="nc" id="L162">				System.out.println(maxattempt);</span>
+<span class="nc" id="L163">				return &quot;Max limit reached..generate otp again&quot;;</span>
+				
+			}
+			
+			
+		}
+<span class="nc" id="L169">		catch(Exception e) {</span>
+<span class="nc" id="L170">			return e.getMessage();</span>
+		}
+		
+		
+		
+	}
+
+	
+	
+	
+
+	
+	
+	
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.7.201606060606</span></div></body></html>

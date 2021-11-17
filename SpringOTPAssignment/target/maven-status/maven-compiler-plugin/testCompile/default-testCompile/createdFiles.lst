@@ -1,0 +1,11 @@
+com\rapipay\app\dao\OtpRepositoryTest.class
+com\rapipay\app\controller\ControllerTest.class
+com\rapipay\app\exception\ErrorDetailsTest.class
+com\rapipay\app\exception\OtpLengthExceptionTest.class
+com\rapipay\app\exception\GlobalExceptionHandlerTest.class
+com\rapipay\app\exception\InvalidEmailExceptionTest.class
+com\rapipay\app\exception\EmailNotFoundExceptionTest.class
+com\rapipay\app\services\MailServiceImplTest.class
+com\rapipay\app\exception\InvalidOtpExceptionTest.class
+com\rapipay\app\services\SenderServiceTest.class
+com\rapipay\app\OtpApplicationTest.class
